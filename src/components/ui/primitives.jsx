@@ -1,0 +1,15 @@
+import * as React from "react";
+import * as AccordionPrimitive from "@radix-ui/react-accordion";
+import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
+import * as SeparatorPrimitive from "@radix-ui/react-separator";
+import * as SliderPrimitive from "@radix-ui/react-slider";
+import { Check, ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+export const Accordion = AccordionPrimitive.Root;
+export const AccordionItem = React.forwardRef(function AccordionItem({ className, ...props }, ref) { return <AccordionPrimitive.Item ref={ref} className={cn("border-b", className)} {...props} />; });
+export const AccordionTrigger = React.forwardRef(function AccordionTrigger({ className, children, ...props }, ref) { return <AccordionPrimitive.Header className="flex"><AccordionPrimitive.Trigger ref={ref} className={cn("flex flex-1 items-center justify-between py-4 font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180", className)} {...props}>{children}<ChevronDown className="h-4 w-4 shrink-0 transition-transform" /></AccordionPrimitive.Trigger></AccordionPrimitive.Header>; });
+export const AccordionContent = React.forwardRef(function AccordionContent({ className, children, ...props }, ref) { return <AccordionPrimitive.Content ref={ref} className="overflow-hidden text-sm" {...props}><div className={cn("pb-4 pt-0", className)}>{children}</div></AccordionPrimitive.Content>; });
+export const Checkbox = React.forwardRef(function Checkbox({ className, ...props }, ref) { return <CheckboxPrimitive.Root ref={ref} className={cn("peer h-4 w-4 shrink-0 rounded-sm border border-primary-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground", className)} {...props}><CheckboxPrimitive.Indicator className="flex items-center justify-center"><Check className="h-4 w-4" /></CheckboxPrimitive.Indicator></CheckboxPrimitive.Root>; });
+export const Slider = React.forwardRef(function Slider({ className, ...props }, ref) { return <SliderPrimitive.Root ref={ref} className={cn("relative flex w-full touch-none select-none items-center", className)} {...props}><SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-subtle"><SliderPrimitive.Range className="absolute h-full bg-primary" /></SliderPrimitive.Track><SliderPrimitive.Thumb className="block h-5 w-5 rounded-full border-2 border-primary-ink bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" /></SliderPrimitive.Root>; });
+export const Separator = React.forwardRef(function Separator({ className, orientation = "horizontal", decorative = true, ...props }, ref) { return <SeparatorPrimitive.Root ref={ref} decorative={decorative} orientation={orientation} className={cn("shrink-0 bg-border", orientation === "horizontal" ? "h-px w-full" : "h-full w-px", className)} {...props} />; });
