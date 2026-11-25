@@ -10,8 +10,9 @@ import {
   Truck,
   RotateCcw,
   Sparkles,
-  Compass,
-  HeartHandshake,
+  Gem,
+  Hourglass,
+  Hammer,
   CheckCircle2,
   Check,
 } from 'lucide-react';
@@ -31,8 +32,9 @@ const ICON_MAP = {
   Truck,
   RotateCcw,
   Sparkles,
-  Compass,
-  HeartHandshake,
+  Gem,
+  Hourglass,
+  Hammer,
 };
 
 function subscribeDesktopPointer(callback) {
