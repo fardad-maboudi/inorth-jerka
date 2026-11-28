@@ -14,6 +14,12 @@ const SHOP_PAGE_FILES = {
   orderSuccess: 'src/pages/Shop/OrderSuccess.jsx',
 };
 
+const ACCOUNT_PAGE_FILES = {
+  login: 'src/pages/Login.jsx',
+  profile: 'src/pages/Profile.jsx',
+  admin: 'src/pages/Admin.jsx',
+};
+
 function routeOf(file) {
   const path = pageRoutePath(file);
   if (!path) throw new Error(`jerka routes: ${file} is not a routable page`);
@@ -28,6 +34,9 @@ export const ROUTES = {
   shop: routeOf(SHOP_PAGE_FILES.productList),
   ...Object.fromEntries(
     Object.entries(SHOP_PAGE_FILES).map(([key, file]) => [key, routeOf(file)]),
+  ),
+  ...Object.fromEntries(
+    Object.entries(ACCOUNT_PAGE_FILES).map(([key, file]) => [key, routeOf(file)]),
   ),
 };
 

@@ -54,11 +54,14 @@ export default defineConfig(async ({ command, mode }) => {
     server: {
       host: true,
       port: 5173,
+      allowedHosts: true,
       proxy: {
         "/api": {
           target: serverTarget,
           changeOrigin: true,
           secure: true,
+          timeout: 4000,
+          proxyTimeout: 4000,
         },
       },
       fs: {

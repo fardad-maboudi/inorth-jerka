@@ -2,14 +2,16 @@ import { SandboxBadge } from '@joorchin/site-ui';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Lock, Truck, MapPin, Store } from 'lucide-react';
+import { Lock, Truck, MapPin, Store, User } from 'lucide-react';
 import {
   checkout as serverCheckout,
+  localPhone,
   redirectToPayment,
   useCheckoutPaymentMethods,
   getShippingMethods,
   getPickupLocations,
 } from '@/api/plugins/ecommerce';
+import { recordCustomerOrder, useAtelierStore } from '@/lib/atelier-store';
 import { useCart } from '@/lib/cart-context';
 import { formatMoney } from '@/lib/money';
 import { ROUTES } from '@/lib/routes';
@@ -38,16 +40,29 @@ export default function Checkout() {
     setShipping,
     loading,
   } = useCart();
+  const { isAuthenticated, currentUser, userAddresses } = useAtelierStore();
   const navigate = useNavigate();
 
-  const [address, setAddress] = useState({
-    name: '',
-    phone: '',
-    province: '',
-    city: '',
-    line1: '',
-    postalCode: '',
-  });
+  const defaultSaved = userAddresses.find((a) => a.isDefault) || userAddresses[0];
+  const [address, setAddress] = useState(() =>
+    isAuthenticated && defaultSaved
+      ? {
+          name: defaultSaved.name || currentUser?.name || '',
+          phone: localPhone(defaultSaved.phone) || defaultSaved.phone || '',
+          province: defaultSaved.province || '',
+          city: defaultSaved.city || '',
+          line1: defaultSaved.line1 || '',
+          postalCode: defaultSaved.postalCode || '',
+        }
+      : {
+          name: currentUser?.name || '',
+          phone: localPhone(currentUser?.phone) || '',
+          province: '',
+          city: '',
+          line1: '',
+          postalCode: '',
+        },
+  );
   const [methods, setMethods] = useState([]);
   const [methodId, setMethodId] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -95,6 +110,20 @@ export default function Checkout() {
         shippingMethodId: methodId || undefined,
       });
       const { orderId } = result;
+      recordCustomerOrder({
+        id: orderId,
+        customerName: address.name,
+        customerPhone: address.phone,
+        city: address.city,
+        addressLine: `${address.province}، ${address.city} — ${address.line1}`,
+        postalCode: address.postalCode,
+        currency,
+        subtotal,
+        discount,
+        shippingCost,
+        total,
+        items,
+      });
       if (redirectToPayment(result)) return;
       if (Number(result.total) > 0) throw new Error('درگاه پرداخت در دسترس نیست.');
       navigate(`${ROUTES.orderSuccess}?order=${encodeURIComponent(orderId || '')}`);
@@ -118,12 +147,70 @@ export default function Checkout() {
 
   return (
     <div className="container-max section-padding">
-      <header className="mb-12">
-        <p className="eyebrow">Checkout</p>
-        <h1 className="mt-4 font-heading text-4xl font-bold tracking-tight md:text-5xl">
+      <header className="mb-10">
+        <p className="eyebrow" dir="ltr">Checkout</p>
+        <h1 className="mt-4 font-heading text-4xl font-bold md:text-5xl">
           تکمیل سفارش
         </h1>
       </header>
+
+      {/* Account / Saved Addresses Strip */}
+      {!isAuthenticated ? (
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line bg-sand/50 px-5 py-4 text-xs sm:text-sm">
+          <div className="flex items-center gap-2.5 text-ink">
+            <User size={16} className="text-brand-600 shrink-0" />
+            <span>عضو باشگاه ژرکا هستید؟ برای انتخاب سریع نشانی‌های ذخیره‌شده وارد شوید.</span>
+          </div>
+          <Link
+            to={`${ROUTES.login}?redirect=${encodeURIComponent(ROUTES.checkout)}`}
+            className="rounded-xl bg-espresso px-4 py-2 font-heading text-xs font-bold text-cream transition-colors hover:bg-brand-600"
+          >
+            ورود به حساب کاربری
+          </Link>
+        </div>
+      ) : (
+        userAddresses.length > 0 && (
+          <div className="mb-8 rounded-2xl border border-line bg-sand/45 p-4 sm:p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="font-heading text-xs sm:text-sm font-bold text-ink">
+                انتخاب سریع از نشانی‌های ذخیره‌شده شما ({currentUser?.name})
+              </span>
+              <Link
+                to={`${ROUTES.profile}?tab=addresses`}
+                className="font-heading text-xs font-bold text-brand-700 hover:underline"
+              >
+                مدیریت نشانی‌ها
+              </Link>
+            </div>
+            <div className="flex flex-wrap gap-2.5">
+              {userAddresses.map((saved) => (
+                <button
+                  key={saved.id}
+                  type="button"
+                  onClick={() => {
+                    const next = {
+                      name: saved.name || currentUser?.name || '',
+                      phone: localPhone(saved.phone) || saved.phone || '',
+                      province: saved.province || '',
+                      city: saved.city || '',
+                      line1: saved.line1 || '',
+                      postalCode: saved.postalCode || '',
+                    };
+                    addressRef.current = next;
+                    setAddress(next);
+                  }}
+                  className="rounded-xl border border-line bg-card px-3.5 py-2 text-start text-xs transition-colors hover:border-brand-600 cursor-pointer"
+                >
+                  <strong className="font-heading text-ink">{saved.label}</strong>
+                  <span className="ms-1.5 text-muted">
+                    ({saved.city} — {saved.line1.slice(0, 28)}…)
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )
+      )}
 
       {paymentModes?.sandbox && <SandboxBadge />}
       <form onSubmit={handleSubmit} className="grid items-start gap-12 lg:grid-cols-[1.6fr_1fr]">

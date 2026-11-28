@@ -5,7 +5,7 @@
  */
 export const platformConfig = {
   version: 1,
-  enabledPlugins: { ecommerce: true, auth: false, delivery: false, i18n: false },
+  enabledPlugins: { ecommerce: true, auth: true, delivery: false, i18n: false },
 };
 
 export default platformConfig;

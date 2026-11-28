@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ShoppingBag, Menu, X, ArrowLeft, Check } from 'lucide-react';
+import { ShoppingBag, Menu, X, Check, User } from 'lucide-react';
 import { useCart } from '@/lib/cart-context';
+import { useAtelierStore } from '@/lib/atelier-store';
 import { ROUTES } from '@/lib/routes';
 import CartDrawer from '@/components/CartDrawer';
 import { CartDrawerContext } from '@/components/cart-drawer-context';
@@ -13,6 +14,8 @@ const NAV_LINKS = [
   { to: ROUTES.home, label: 'صفحه اصلی' },
   { to: ROUTES.shop, label: 'فروشگاه' },
   { to: '/#story', label: 'داستان ژرکا', hash: true },
+  { to: ROUTES.profile, label: 'حساب کاربری' },
+  { to: ROUTES.admin, label: 'پنل مدیریت' },
 ];
 
 function Wordmark({ tone = 'dark' }) {
@@ -42,6 +45,7 @@ function Wordmark({ tone = 'dark' }) {
 
 function Header({ drawer }) {
   const { count } = useCart();
+  const { currentUser, isAuthenticated, storeSettings } = useAtelierStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const isHome = location.pathname === '/' || location.pathname === ROUTES.home;
@@ -56,13 +60,16 @@ function Header({ drawer }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [isHome]);
 
+  const announcementText =
+    storeSettings?.announcementText || homeContent.announcement.text;
+
   return (
     <>
       {/* Announcement band — hidden on home page so navbar sits directly on hero image */}
       {!isHome && (
         <div className="bg-espresso py-2.5 text-center text-on-espresso">
-          <p className="container-max text-xs tracking-wide text-on-espresso/90 md:text-[13px]">
-            {homeContent.announcement.text}
+          <p className="container-max text-xs text-on-espresso/90 md:text-[13px]">
+            {announcementText}
           </p>
         </div>
       )}
@@ -121,8 +128,32 @@ function Header({ drawer }) {
             </ul>
           </nav>
 
-          {/* Inline-end: Icons cluster */}
-          <div className="flex items-center justify-end gap-1 sm:gap-2">
+          {/* Inline-end: Account + Cart cluster */}
+          <div className="flex items-center justify-end gap-1.5 sm:gap-2.5">
+            {isAuthenticated && currentUser ? (
+              <Link
+                to={ROUTES.profile}
+                aria-label={`حساب کاربری ${currentUser.name}`}
+                className="flex items-center gap-2 rounded-full border border-line/80 bg-sand/75 py-1.5 ps-2 pe-3.5 text-xs sm:text-sm font-heading font-bold text-ink transition-[background-color,border-color,transform] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-brand-600 hover:bg-sand active:scale-95"
+              >
+                <span className="grid size-6 place-items-center rounded-full bg-brand-600 text-[11px] font-bold text-cream">
+                  {currentUser.name?.slice(0, 1) || 'ژ'}
+                </span>
+                <span className="hidden sm:inline max-w-28 truncate leading-none">
+                  {currentUser.name}
+                </span>
+              </Link>
+            ) : (
+              <Link
+                to={ROUTES.login}
+                aria-label="ورود یا ثبت‌نام در ژرکا"
+                className="flex items-center gap-1.5 rounded-full border border-line/80 bg-card/85 py-2 px-3 sm:py-2.5 sm:px-3.5 text-xs sm:text-sm font-heading font-bold text-ink backdrop-blur-xs transition-[background-color,border-color,color,transform] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-brand-600 hover:text-brand-700 active:scale-95"
+              >
+                <User size={15} strokeWidth={1.9} className="text-brand-600" />
+                <span>ورود</span>
+              </Link>
+            )}
+
             <button
               type="button"
               onClick={drawer.openDrawer}
@@ -174,7 +205,7 @@ function Header({ drawer }) {
                 {NAV_LINKS.map((link) => (
                   <li key={link.label}>
                     <Link
-                      to={link.to.replace('/#', '/')}
+                      to={link.hash ? link.to : link.to}
                       onClick={() => setMenuOpen(false)}
                       className="block py-3 text-sm font-medium text-neutral-800"
                     >
@@ -182,6 +213,15 @@ function Header({ drawer }) {
                     </Link>
                   </li>
                 ))}
+                <li>
+                  <Link
+                    to={ROUTES.login}
+                    onClick={() => setMenuOpen(false)}
+                    className="block py-3 text-sm font-bold text-brand-700"
+                  >
+                    {isAuthenticated ? 'مدیریت نشست / تغییر حساب' : 'ورود و ثبت‌نام در ژرکا'}
+                  </Link>
+                </li>
               </ul>
             </motion.nav>
           )}
@@ -226,12 +266,12 @@ function Footer() {
       ],
     },
     {
-      title: 'راهنما',
+      title: 'حساب کاربری',
       links: [
-        { label: 'ارسال', to: ROUTES.shop },
-        { label: 'بازگشت کالا', to: ROUTES.shop },
-        { label: 'پرسش‌های رایج', to: ROUTES.shop },
-        { label: 'حریم خصوصی', to: ROUTES.shop },
+        { label: 'ورود و عضویت', to: ROUTES.login },
+        { label: 'پروفایل من', to: ROUTES.profile },
+        { label: 'سفارش‌ها و رهگیری', to: `${ROUTES.profile}?tab=orders` },
+        { label: 'پنل مدیریت', to: ROUTES.admin },
       ],
     },
   ];
@@ -356,6 +396,9 @@ function Footer() {
 export default function Layout({ children }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const location = useLocation();
+  const isAdminRoute =
+    location.pathname === ROUTES.admin ||
+    location.pathname.startsWith(`${ROUTES.admin}/`);
 
   // Scroll to top on route navigation; in-page (#hash) jumps keep position.
   useEffect(() => {
@@ -372,11 +415,15 @@ export default function Layout({ children }) {
 
   return (
     <CartDrawerContext.Provider value={drawer}>
-      <div className="flex min-h-screen flex-col bg-paper text-ink">
-        <Header drawer={drawer} />
-        <main className="flex-1">{children ?? <Outlet />}</main>
-        <Footer />
-      </div>
+      {isAdminRoute ? (
+        <main className="min-h-screen bg-paper text-ink">{children ?? <Outlet />}</main>
+      ) : (
+        <div className="flex min-h-screen flex-col bg-paper text-ink">
+          <Header drawer={drawer} />
+          <main className="flex-1">{children ?? <Outlet />}</main>
+          <Footer />
+        </div>
+      )}
       <CartDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </CartDrawerContext.Provider>
   );
